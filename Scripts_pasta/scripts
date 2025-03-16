@@ -1,1 +1,42 @@
 
+import pandas as pd
+from datetime import datetime
+
+# Lista de arquivos
+files = {
+    "AliExpress": "Meganium_Sales_Data_-_AliExpress.csv",
+    "Etsy": "Meganium_Sales_Data_-_Etsy.csv",
+    "Shopee": "Meganium_Sales_Data_-_Shopee.csv",
+}
+
+# Lista para armazenar dados
+sales_data_age = []
+
+for platform, file_path in files.items():
+    try:
+        df = pd.read_csv(file_path)
+        
+        # Converter buyer_birth_date para datetime
+        df["buyer_birth_date"] = pd.to_datetime(df["buyer_birth_date"], errors="coerce")
+        
+        # Calcular idade
+        current_year = datetime.now().year
+        df["idade"] = current_year - df["buyer_birth_date"].dt.year
+        
+        # Agrupar idade média por país
+        country_age = df.groupby("delivery_country")["idade"].mean().reset_index()
+        country_age["Plataforma"] = platform
+        sales_data_age.append(country_age)
+    except Exception as e:
+        print(f"Erro ao processar {platform}: {e}")
+
+# Consolidar os dados
+if sales_data_age:
+    age_summary = pd.concat(sales_data_age, ignore_index=True)
+    age_summary = age_summary.groupby("delivery_country")["idade"].mean().reset_index()
+    age_summary.rename(columns={"delivery_country": "País", "idade": "Idade Média"}, inplace=True)
+    
+    # Exibir resultado
+    print(age_summary)
+else:
+    print("Nenhum dado processado.")
